@@ -1,0 +1,9 @@
+# Ignore dataset folder (replace 'dataset' with the actual folder name)
+dataset/
+
+# Ignore all .keras model files
+*.keras
+
+# Ignore any cached or temporary files
+__pycache__/
+*.log
