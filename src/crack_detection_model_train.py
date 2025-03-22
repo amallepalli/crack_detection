@@ -91,7 +91,9 @@ for layer in model.layers:
 x = model.output
 x = Flatten()(x)
 x = Dense(256, activation="relu")(x)
-predictions = Dense(2, activation="softmax")(x)
+x = Dense(128, activation="relu")(x) #Extra layer for better learning
+x = Dense(64, activatoin="relu")(x) #Extra later to help learn complex patterns
+predictions = Dense(3, activation="softmax")(x)
 model = tf.keras.models.Model(inputs=model.input, outputs=predictions)
 
 model.summary()
@@ -108,14 +110,50 @@ lr_scheduler = ReduceLROnPlateau(
 
 history = model.fit(
     train_dataset,
-    epochs=5,
+    epochs=10,
     validation_data=val_dataset,
     steps_per_epoch=len(train_dataset),
     validation_steps=len(val_dataset),
     callbacks=[lr_scheduler]
 )
 
+
+# Function to plot training and validation accuracy/loss
+def plot_training_history(history):
+    # Extract accuracy and loss from history
+    acc = history.history['accuracy']
+    val_acc = history.history['val_accuracy']
+    loss = history.history['loss']
+    val_loss = history.history['val_loss']
+    
+    epochs = range(1, len(acc) + 1)
+    
+    # Plot Accuracy
+    plt.figure(figsize=(12, 5))
+    
+    plt.subplot(1, 2, 1)
+    plt.plot(epochs, acc, 'bo-', label='Training Accuracy')
+    plt.plot(epochs, val_acc, 'r*-', label='Validation Accuracy')
+    plt.title('Training and Validation Accuracy')
+    plt.xlabel('Epochs')
+    plt.ylabel('Accuracy')
+    plt.legend()
+    
+    # Plot Loss
+    plt.subplot(1, 2, 2)
+    plt.plot(epochs, loss, 'bo-', label='Training Loss')
+    plt.plot(epochs, val_loss, 'r*-', label='Validation Loss')
+    plt.title('Training and Validation Loss')
+    plt.xlabel('Epochs')
+    plt.ylabel('Loss')
+    plt.legend()
+    
+    plt.show()
+
+# Call the function after training
+plot_training_history(history)
+
 test_loss, test_acc = model.evaluate(test_dataset)
 print(f"Test Accuracy: {test_acc * 100:.2f}%")
 
-model.save("crack_detection/crack_detection_model.keras")
+model.save("crack_detection/crack_detection_model_02.keras")
