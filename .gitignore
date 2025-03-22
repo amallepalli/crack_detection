@@ -3,6 +3,7 @@ dataset/
 
 # Ignore all .keras model files
 *.keras
+*.pt
 
 # Ignore any cached or temporary files
 __pycache__/
