@@ -19,6 +19,8 @@ def highlight_cracks(im, im_size, model, class_names, step_size):
             output_class = class_names[np.argmax(pred)]
             if(output_class == "crack"):
                 color = (255, 26, 26) # red
+            elif(output_class == "spalling"):
+                color = (26, 26, 255) #blue
             else:
                 color = (153, 255, 153) # green
             colored_window = np.zeros_like(sliding_window, dtype=np.uint8)
@@ -28,9 +30,9 @@ def highlight_cracks(im, im_size, model, class_names, step_size):
         row += int(step_size/2)
     return output_image
 
-model = tf.keras.models.load_model("crack_detection/crack_detection_model_01.keras")
-image_path = "C:/Users/adity/Downloads/concrete_crack.jpeg"
-class_names = ["crack", "non-crack"]
+model = tf.keras.models.load_model("crack_detection/crack_classification_model_02.keras")
+image_path = "IMG_9761.jpg"
+class_names = ["crack", "non-crack", "spalling"]
 step_size = 25
 im_size = (224, 224)
 im = cv2.imread(image_path)

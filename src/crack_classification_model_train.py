@@ -92,7 +92,7 @@ x = model.output
 x = Flatten()(x)
 x = Dense(256, activation="relu")(x)
 x = Dense(128, activation="relu")(x) #Extra layer for better learning
-x = Dense(64, activatoin="relu")(x) #Extra later to help learn complex patterns
+x = Dense(64, activation="relu")(x) #Extra later to help learn complex patterns
 predictions = Dense(3, activation="softmax")(x)
 model = tf.keras.models.Model(inputs=model.input, outputs=predictions)
 
