@@ -1,9 +1,5 @@
 from ultralytics import YOLO
 import cv2
-
-model = YOLO("path to model")
-
-results = model.predict("path to image", save=False, show=True)
-
-cv2.waitKey(0)  
-cv2.destroyAllWindows()
+model = YOLO("spalling_segmentation_model_01.pt")
+image = cv2.imread("IMG_9775.jpg")
+results = model.predict(image, save=True, show=False)

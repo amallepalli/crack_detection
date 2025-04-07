@@ -31,7 +31,7 @@ def highlight_cracks(im, im_size, model, class_names, step_size):
     return output_image
 
 model = tf.keras.models.load_model("crack_detection/crack_classification_model_02.keras")
-image_path = "IMG_9761.jpg"
+image_path = "IMG_9764.jpg"
 class_names = ["crack", "non-crack", "spalling"]
 step_size = 25
 im_size = (224, 224)
