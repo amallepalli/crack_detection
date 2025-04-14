@@ -1,0 +1,5 @@
+names:
+  0: Crack
+  1: Spalling
+path: .
+train: train.txt
