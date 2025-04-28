@@ -67,7 +67,9 @@ def detect_crack_and_spall(image_path, crack_model, spalling_model):
     plt.tight_layout()
     plt.show()
 
-crack_model = YOLO("crack_segmentation_model_01.pt")      
-spalling_model = YOLO("spalling_segmentation_model_01.pt") 
-image_path = "IMG_9775.jpg"
+crack_model = YOLO("C:/Users/adity/Projects/FTR Research/runs/segment/crack_100/weights/best.pt")      
+#spalling_model = YOLO("C:/Users/adity/Projects/FTR Research/runs/segment/spalling_100/weights/best.pt")
+# crack_model = YOLO("crack_segmentation_model_01.pt")      
+spalling_model = YOLO("spalling_segmentation_model_01.pt")  
+image_path = "Screenshot 2025-04-05 135549.png"
 detect_crack_and_spall(image_path, crack_model, spalling_model)
