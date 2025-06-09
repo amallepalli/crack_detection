@@ -5,25 +5,24 @@ import matplotlib.pyplot as plt
 from matplotlib.patches import Patch
 
 
-def detect_crack_and_spall(image_path, crack_model, spalling_model):
-    image_og = cv2.imread(image_path)
-    image_rgb = cv2.cvtColor(image_og, cv2.COLOR_BGR2RGB)
-    H, W = image_og.shape[:2] 
+def detect_crack_and_spall(frame, crack_model, spalling_model):
+    image_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+    H, W = frame.shape[:2] 
 
     #predict with crack model and get mask
     crack_mask = np.zeros((H, W), dtype=np.uint8)
-    crack_result = crack_model.predict(image_og, verbose=False)[0]
+    crack_result = crack_model.predict(frame, verbose=False)[0]
     if crack_result.masks is not None:
-        crack_mask = np.zeros(image_og.shape[:2], dtype=np.uint8)
+        crack_mask = np.zeros(frame.shape[:2], dtype=np.uint8)
         for m in crack_result.masks.data:
             mask = m.cpu().numpy().astype(np.uint8) * 255
             mask_resized = cv2.resize(mask, (W, H), interpolation=cv2.INTER_NEAREST)
             crack_mask[mask_resized > 127] = 1  # Class 1 = crack
 
     spall_mask = np.zeros((H, W), dtype=np.uint8)
-    spalling_result = spalling_model.predict(image_og, verbose=False)[0]
+    spalling_result = spalling_model.predict(frame, verbose=False)[0]
     if spalling_result.masks is not None:
-        spall_mask = np.zeros(image_og  .shape[:2], dtype=np.uint8)
+        spall_mask = np.zeros(frame  .shape[:2], dtype=np.uint8)
         for m in spalling_result.masks.data:
             mask = m.cpu().numpy().astype(np.uint8) * 255
             mask_resized = cv2.resize(mask, (W, H), interpolation=cv2.INTER_NEAREST)
@@ -44,7 +43,9 @@ def detect_crack_and_spall(image_path, crack_model, spalling_model):
     mask_overlay[final_mask == 3] = [255, 0, 255]   # Magenta for both
 
     output_image = cv2.addWeighted(image_rgb, 1.0, mask_overlay, 0.6, 0)
+    return output_image
 
+    '''
     # Show result
     plt.figure(figsize=(12, 6))
     plt.subplot(1, 2, 1)
@@ -66,10 +67,44 @@ def detect_crack_and_spall(image_path, crack_model, spalling_model):
 
     plt.tight_layout()
     plt.show()
+    '''
+crack_model = YOLO("/Users/amallepalli/Projects/FTR2025/crack_detection/crack_segmentation_model_02.pt")      
+spalling_model = YOLO("/Users/amallepalli/Projects/FTR2025/crack_detection/spalling_segmentation_model_01.pt")  
 
-crack_model = YOLO("C:/Users/adity/Projects/FTR Research/runs/segment/crack_100/weights/best.pt")      
-#spalling_model = YOLO("C:/Users/adity/Projects/FTR Research/runs/segment/spalling_100/weights/best.pt")
-# crack_model = YOLO("crack_segmentation_model_01.pt")      
-spalling_model = YOLO("spalling_segmentation_model_01.pt")  
-image_path = "Screenshot 2025-04-05 135549.png"
-detect_crack_and_spall(image_path, crack_model, spalling_model)
+
+# Setup Video Capture
+cap = cv2.VideoCapture("/Users/amallepalli/Downloads/crack_vid.mp4") #0 = default webcam
+fps = cap.get(cv2.CAP_PROP_FPS)
+w = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
+h = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
+fourcc = cv2.VideoWriter_fourcc(*"mp4v")
+out = cv2.VideoWriter("output_overlay_2.mp4", fourcc, fps, (w, h))
+
+frame_idx = 0
+last_frame = None
+while cap.isOpened():
+    ret, frame = cap.read()
+    if not ret:
+        break
+    
+    if last_frame is not None:
+        to_write = last_frame
+    else:
+        to_write = frame
+
+
+    if frame_idx % 5 == 0:
+        result = detect_crack_and_spall(frame, crack_model, spalling_model)
+        result = cv2.cvtColor(result, cv2.COLOR_RGB2BGR)
+        to_write = result
+        last_frame = result
+
+    cv2.imshow("Crack + Spall Overlay", to_write)
+    if cv2.waitKey(1) & 0xFF == ord('q'):
+        break
+    
+    out.write(to_write)
+    frame_idx += 1
+cap.release()
+out.release()
+cv2.destroyAllWindows()
