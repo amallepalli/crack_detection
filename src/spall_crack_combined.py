@@ -3,6 +3,8 @@ import cv2
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.patches import Patch
+from threading import Thread
+from queue import Queue
 
 
 def detect_crack_and_spall(frame, crack_model, spalling_model):
@@ -68,12 +70,57 @@ def detect_crack_and_spall(frame, crack_model, spalling_model):
     plt.tight_layout()
     plt.show()
     '''
-crack_model = YOLO("/Users/amallepalli/Projects/FTR2025/crack_detection/crack_segmentation_model_02.pt")      
-spalling_model = YOLO("/Users/amallepalli/Projects/FTR2025/crack_detection/spalling_segmentation_model_01.pt")  
+crack_model = YOLO("C:/Users/adity/Projects/FTR Research/crack_segmentation_model_02.pt")      
+spalling_model = YOLO("C:/Users/adity/Projects/FTR Research/spalling_segmentation_model_01.pt")  
 
 
 # Setup Video Capture
-cap = cv2.VideoCapture("/Users/amallepalli/Downloads/crack_vid.mp4") #0 = default webcam
+cap = cv2.VideoCapture(0) #0 = default webcam
+
+#Creating fixed sized Queue to hold "to be processed" frames 
+in_q = Queue(maxsize=1)
+out_q = Queue(maxsize=1)
+
+# capture_loop grabes the frames as fast as cam can deliver
+def capture_loop():
+    while True:
+        ret, frame = cap.read()
+        if not ret:
+            break
+        # drop older frame if queue is full
+        if in_q.full():
+            _ = in_q.get_nowait()
+        in_q.put(frame)
+
+# infer_loop runs the combine mask logic
+def infer_loop():
+    while True:
+        frame = in_q.get()
+        result = detect_crack_and_spall(frame, crack_model, spalling_model)
+        result = cv2.cvtColor(result, cv2.COLOR_RGB2BGR)
+        if out_q.full():
+            _ = out_q.get_nowait()
+        out_q.put(result)
+
+#Initialize Threads
+Thread(target=capture_loop, daemon=True).start()
+Thread(target=infer_loop, daemon=True).start()
+
+#Main loop always shows the latest processed frame
+while True:
+    if not out_q.empty():
+        display = out_q.get()
+        cv2.imshow("Live Crack+Spall Overlay", display)
+    if cv2.waitKey(1) & 0xFF == ord('q'):
+        break
+
+cap.release()
+cv2.destroyAllWindows()
+
+
+
+
+'''
 fps = cap.get(cv2.CAP_PROP_FPS)
 w = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
 h = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
@@ -108,3 +155,4 @@ while cap.isOpened():
 cap.release()
 out.release()
 cv2.destroyAllWindows()
+'''
