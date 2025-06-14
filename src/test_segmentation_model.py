@@ -1,7 +1,7 @@
 from ultralytics import YOLO
 import cv2
-model = YOLO("/Users/amallepalli/Projects/FTR2025/crack_detection/crack_segmentation_model_02.pt")
-image = cv2.imread("/Users/amallepalli/Projects/FTR2025/crack-seg/train/images/1411.rf.169023ce46b72b27d898ecbc9ac6ecf5.jpg")
+model = YOLO("C:/Users/adity/Projects/FTR Research/crack_segmentation_model_02.pt")
+image = cv2.imread("C:/Users/adity/Projects/FTR Research/IMG_9836.jpg")
 results = model.predict(image, save=True, show=False)
 
 masks = results[0].masks

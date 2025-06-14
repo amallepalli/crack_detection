@@ -7,25 +7,35 @@ from threading import Thread
 from queue import Queue
 
 
-def detect_crack_and_spall(frame, crack_model, spalling_model):
+def detect_crack_and_spall(frame, crack_model, spalling_model, crack_thresh, spalling_thresh):
     image_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+    output_image = image_rgb.copy()
+
     H, W = frame.shape[:2] 
 
     #predict with crack model and get mask
     crack_mask = np.zeros((H, W), dtype=np.uint8)
     crack_result = crack_model.predict(frame, verbose=False)[0]
+    crack_confs = crack_result.boxes.conf.cpu().numpy()                 
+    crack_boxes = crack_result.boxes.xyxy.cpu().numpy().astype(int)
     if crack_result.masks is not None:
-        crack_mask = np.zeros(frame.shape[:2], dtype=np.uint8)
-        for m in crack_result.masks.data:
+        for idx, m in enumerate(crack_result.masks.data):
+            if crack_confs[idx] < crack_thresh:
+                #print("crack made it", crack_confs[idx])
+                continue
             mask = m.cpu().numpy().astype(np.uint8) * 255
             mask_resized = cv2.resize(mask, (W, H), interpolation=cv2.INTER_NEAREST)
             crack_mask[mask_resized > 127] = 1  # Class 1 = crack
 
     spall_mask = np.zeros((H, W), dtype=np.uint8)
     spalling_result = spalling_model.predict(frame, verbose=False)[0]
+    spalling_confs = spalling_result.boxes.conf.cpu().numpy()
+    spalling_boxes = spalling_result.boxes.xyxy.cpu().numpy().astype(int)
     if spalling_result.masks is not None:
-        spall_mask = np.zeros(frame  .shape[:2], dtype=np.uint8)
-        for m in spalling_result.masks.data:
+        for idx, m in enumerate(spalling_result.masks.data):
+            if spalling_confs[idx] < spalling_thresh:
+                #print("spalling made it", spalling_confs[idx])
+                continue
             mask = m.cpu().numpy().astype(np.uint8) * 255
             mask_resized = cv2.resize(mask, (W, H), interpolation=cv2.INTER_NEAREST)
             spall_mask[mask_resized > 127] = 2  # Class 2 = spalling
@@ -38,16 +48,52 @@ def detect_crack_and_spall(frame, crack_model, spalling_model):
      
     
     # mask overlay
-    output_image = image_rgb.copy()
     mask_overlay = np.zeros_like(image_rgb)
     mask_overlay[final_mask == 1] = [255, 0, 0]     # Red for cracks
     mask_overlay[final_mask == 2] = [0, 255, 0]     # Green for spalling
     mask_overlay[final_mask == 3] = [255, 0, 255]   # Magenta for both
 
     output_image = cv2.addWeighted(image_rgb, 1.0, mask_overlay, 0.6, 0)
-    return output_image
 
-    '''
+
+    for idx, conf in enumerate(crack_confs):
+        if conf < crack_thresh:
+            continue
+        x1, y1, _, _ = crack_boxes[idx]
+        cv2.putText(output_image,
+                    f"Crack {conf:.2f}",
+                    (x1, y1 - 5),
+                    cv2.FONT_HERSHEY_SIMPLEX,
+                    1.2,
+                    (255, 0, 0),
+                    2)
+
+    for idx, conf in enumerate(spalling_confs):
+        if conf < spalling_thresh:
+            continue
+        x1, y1, _, _ = spalling_boxes[idx]
+        cv2.putText(output_image,
+                    f"Spalling {conf:.2f}",
+                    (x1, y1 - 5),
+                    cv2.FONT_HERSHEY_SIMPLEX,
+                    1.2,
+                    (0, 255, 0),
+                    2)
+
+    ys, xs = np.where(final_mask == 3)
+    if ys.size > 0:
+        cy, cx = int(ys.mean()), int(xs.mean())
+        cv2.putText(output_image,
+                    "Both",
+                    (cx, cy),
+                    cv2.FONT_HERSHEY_SIMPLEX,
+                    1.2,
+                    (255, 0, 255),
+                    2)
+
+    return output_image
+'''
+
     # Show result
     plt.figure(figsize=(12, 6))
     plt.subplot(1, 2, 1)
@@ -69,90 +115,17 @@ def detect_crack_and_spall(frame, crack_model, spalling_model):
 
     plt.tight_layout()
     plt.show()
-    '''
+
 crack_model = YOLO("C:/Users/adity/Projects/FTR Research/crack_segmentation_model_02.pt")      
-spalling_model = YOLO("C:/Users/adity/Projects/FTR Research/spalling_segmentation_model_01.pt")  
-
-
-# Setup Video Capture
-cap = cv2.VideoCapture(0) #0 = default webcam
-
-#Creating fixed sized Queue to hold "to be processed" frames 
-in_q = Queue(maxsize=1)
-out_q = Queue(maxsize=1)
-
-# capture_loop grabes the frames as fast as cam can deliver
-def capture_loop():
-    while True:
-        ret, frame = cap.read()
-        if not ret:
-            break
-        # drop older frame if queue is full
-        if in_q.full():
-            _ = in_q.get_nowait()
-        in_q.put(frame)
-
-# infer_loop runs the combine mask logic
-def infer_loop():
-    while True:
-        frame = in_q.get()
-        result = detect_crack_and_spall(frame, crack_model, spalling_model)
-        result = cv2.cvtColor(result, cv2.COLOR_RGB2BGR)
-        if out_q.full():
-            _ = out_q.get_nowait()
-        out_q.put(result)
-
-#Initialize Threads
-Thread(target=capture_loop, daemon=True).start()
-Thread(target=infer_loop, daemon=True).start()
-
-#Main loop always shows the latest processed frame
-while True:
-    if not out_q.empty():
-        display = out_q.get()
-        cv2.imshow("Live Crack+Spall Overlay", display)
-    if cv2.waitKey(1) & 0xFF == ord('q'):
-        break
-
-cap.release()
-cv2.destroyAllWindows()
-
-
-
-
-'''
-fps = cap.get(cv2.CAP_PROP_FPS)
-w = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
-h = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
-fourcc = cv2.VideoWriter_fourcc(*"mp4v")
-out = cv2.VideoWriter("output_overlay_2.mp4", fourcc, fps, (w, h))
-
-frame_idx = 0
-last_frame = None
-while cap.isOpened():
-    ret, frame = cap.read()
-    if not ret:
-        break
-    
-    if last_frame is not None:
-        to_write = last_frame
-    else:
-        to_write = frame
-
-
-    if frame_idx % 5 == 0:
-        result = detect_crack_and_spall(frame, crack_model, spalling_model)
-        result = cv2.cvtColor(result, cv2.COLOR_RGB2BGR)
-        to_write = result
-        last_frame = result
-
-    cv2.imshow("Crack + Spall Overlay", to_write)
-    if cv2.waitKey(1) & 0xFF == ord('q'):
-        break
-    
-    out.write(to_write)
-    frame_idx += 1
-cap.release()
-out.release()
+spalling_model = YOLO("C:/Users/adity/Projects/FTR Research/spalling_segmentation_model_01.pt")
+crack_thresh = 0
+spalling_thresh = 0
+frame = cv2.imread("C:/Users/adity/Projects/FTR Research/IMG_9836.jpg")  
+output = detect_crack_and_spall(frame, crack_model, spalling_model, crack_thresh, spalling_thresh)
+to_show = cv2.cvtColor(output, cv2.COLOR_RGB2BGR)
+cv2.namedWindow("Overlay Test", cv2.WINDOW_NORMAL)  
+cv2.resizeWindow("Overlay Test", 800, 600)   # set whatever max size you like
+cv2.imshow("Overlay Test", to_show)
+cv2.waitKey(0)            # wait until you press any key
 cv2.destroyAllWindows()
 '''
