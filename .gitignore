@@ -1,6 +1,9 @@
 # Ignore dataset folder (replace 'dataset' with the actual folder name)
 dataset/
 
+# Ignore imported yolo_cam folder
+yolo_cam/
+
 # Ignore all .keras model files
 *.keras
 *.pt
@@ -8,3 +11,6 @@ dataset/
 # Ignore any cached or temporary files
 __pycache__/
 *.log
+
+# Ignore all image files
+*.jpg
