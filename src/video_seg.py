@@ -6,8 +6,8 @@ from queue import Queue
 
 crack_model = YOLO("C:/Users/adity/Projects/FTR Research/crack_segmentation_model_02.pt")      
 spalling_model = YOLO("C:/Users/adity/Projects/FTR Research/spalling_segmentation_model_01.pt")
-crack_thresh = 0.3
-spalling_thresh = 0.5  
+crack_thresh = 0
+spalling_thresh = 0
 
 
 # Setup Video Capture

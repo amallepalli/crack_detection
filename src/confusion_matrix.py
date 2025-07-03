@@ -4,7 +4,7 @@ from sklearn.metrics import confusion_matrix, ConfusionMatrixDisplay
 from tensorflow.keras.preprocessing.image import ImageDataGenerator # type: ignore
 import tensorflow as tf
 
-model = tf.keras.models.load_model("crack_detection/crack_detection_model_01.keras")
+model = tf.keras.models.load_model("crack_classification_model_01.keras")
 
 tf.random.set_seed(0)
 datagen = ImageDataGenerator(
