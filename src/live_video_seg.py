@@ -1,4 +1,4 @@
-from spall_crack_combined import detect_crack_and_spall
+from mask_comb import detect_crack_and_spall
 from ultralytics import YOLO
 import cv2
 from threading import Thread
