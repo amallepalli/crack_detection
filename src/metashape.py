@@ -3,9 +3,10 @@ import os
 import json
 from shapely.geometry import Polygon
 
-json_folder = "C:\Programming\crack_detection\detection_json"
+
+json_folder = r"C:\Programming\crack_detection\videos\vid1\vid1_json"
 layer_name = "Projected Damage"
-confidence_threshold = 0
+confidence_threshold = .2
 iou_threshold = .4
 
 def check_for_duplicate_masks(new_coords, polygons, iou_threshold):
@@ -26,9 +27,13 @@ def check_for_duplicate_masks(new_coords, polygons, iou_threshold):
     polygons.insert(0, new_polygon)
     return False
 
-def project_to_model(json_folder, layer_name, confidence_threshold=.2, iou_threshold=.7):
-    doc = Metashape.app.document
-    
+def project_to_model(json_folder, layer_name, confidence_threshold=.2, iou_threshold=.4, doc=None):
+    if not os.path.isdir(json_folder):
+        print(f"Folder {json_folder} does not exist")
+        return
+
+    if doc is None:
+        doc = Metashape.app.document
     chunk = doc.chunk
     if not chunk:
         print("No chunk found in the document")
@@ -121,6 +126,8 @@ def project_to_model(json_folder, layer_name, confidence_threshold=.2, iou_thres
         print("Document saved")
     else:
         print("No shapes were added")
+
+    doc.save()
 
 if __name__ == "__main__":
     project_to_model(json_folder, layer_name, confidence_threshold, iou_threshold)

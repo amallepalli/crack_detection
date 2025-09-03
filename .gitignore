@@ -1,6 +1,9 @@
 # Ignore dataset folder (replace 'dataset' with the actual folder name)
 dataset/
 
+# Ignore videos folder with metashape data, video frames and detections
+videos/
+
 # Ignore imported yolo_cam folder
 yolo_cam/
 

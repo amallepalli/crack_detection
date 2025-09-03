@@ -16,10 +16,10 @@ import os
 
 crack_model = YOLO("C:\Programming\crack_detection\models\crack_segmentation_model_02.pt")      
 spalling_model = YOLO("C:\Programming\crack_detection\models\spalling_segmentation_model_01.pt")
-video_path = r"C:\Programming\crack_detection\test_vid5.mp4"
-image_folder = "video_frames"
-json_folder = "detection_json"
-desired_fps = 2
+video_path = r"C:\Programming\crack_detection\videos\vid1.MP4"
+image_folder = r"videos\vid1_frames"
+json_folder = r"videos\vid1_json"
+desired_fps = 1
 batch_size = 10
 
 def convert_types(obj):
